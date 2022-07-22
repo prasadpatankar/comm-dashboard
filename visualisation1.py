@@ -15,7 +15,7 @@ from pandas.tseries.offsets import MonthEnd
 import dash_bootstrap_components as dbc
 import plotly.express as px
 
-df2 = pd.read_excel(r"C:\Users\2002\Desktop\Python_Projects\SEBI_Dashboard1\Dashboard_Database.xlsx",sheet_name=None)
+df2 = pd.read_excel("Dashboard_Database.xlsx",sheet_name=None)
 df2a = df2.get('Segment_Wise')
 df2a = df2a.melt(id_vars='Date')
 df2a['Date'] = pd.to_datetime(df2a.Date,format='%Y%m')+MonthEnd(0)
