@@ -1,2 +1,2 @@
 [InternetShortcut]
-URL=https://github.com/prasadpatankar/Prasad_Project/blob/main/runtime.txt
+URL=https://github.com/prasadpatankar/comm-dashboard/runtime.txt
