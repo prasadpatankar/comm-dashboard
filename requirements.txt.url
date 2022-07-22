@@ -1,0 +1,15 @@
+# Date: 01-22-2022
+
+# Minimum requirements for a plotly dash application
+pandas
+numpy
+dash==2.2.0
+dash-core-components==2.0.0
+dash-html-components==2.0.0
+dash_bootstrap_components
+dash-table==5.0.0
+plotly==5.5.0
+
+
+# Required for deployment on Heroku
+gunicorn==20.1.0
