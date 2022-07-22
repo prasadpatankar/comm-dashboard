@@ -1,2 +1,1 @@
-[InternetShortcut]
-URL=https://github.com/prasadpatankar/comm-dashboard/runtime.txt
+python-3.9.7
