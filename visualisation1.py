@@ -192,4 +192,4 @@ def update_graph(sel_exchange, sel_segment):
 
       
 if __name__ == '__main__':
-    app.run_server
+    app.run_server()
