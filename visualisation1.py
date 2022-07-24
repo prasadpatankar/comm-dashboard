@@ -5,8 +5,8 @@ Created on Fri Jul 15 09:55:11 2022
 @author: 2002
 """
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from dash.dependencies import Output, Input
 import plotly.graph_objs as go
 import pandas as pd
@@ -16,7 +16,7 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 
 df2 = pd.read_excel("Dashboard_Database.xlsx",sheet_name=None)
-df2a = df2.get('Segment_Wise')
+df2a = df2.get('Segment_Wise').dropna(axis=1, how='all')
 df2a = df2a.melt(id_vars='Date')
 df2a['Date'] = pd.to_datetime(df2a.Date,format='%Y%m')+MonthEnd(0)
 df2a['Exchange'] = df2a['variable'].str.split("_").str[0]
@@ -32,13 +32,12 @@ mgr_options1 = df2b["Exchange"].unique()
 mgr_options2 = df2b["Segment1"].unique()
 last_date = df2b.loc[len(df2b)-1,'Date'].strftime("%B %Y")
 
-df3 = df2.get('Exchange_Wise')
+df3 = df2.get('Exchange_Wise').dropna(axis=1, how='all')
 df3a = df3.melt(id_vars='Date')
 df3a['Date'] = pd.to_datetime(df3a.Date,format='%Y%m')+MonthEnd(0)
 df3a['Segment2'] = df3a['variable'].str.split("_").str[0]
 df3a['FO'] = df3a['variable'].str.split("_").str[1]
 df3a['Exchange'] = df3a['variable'].str.split("_").str[2]
-
 df3b = df3a.groupby(['Date','Segment2'])[['value']].sum().unstack().apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
 df3b.columns = ['Agri','NonAgri']
 df3b = df3b.tail(12).reset_index().melt(id_vars="Date")
@@ -193,4 +192,4 @@ def update_graph(sel_exchange, sel_segment):
 
       
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
