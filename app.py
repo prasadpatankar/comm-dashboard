@@ -158,7 +158,7 @@ def fig56(data):
 
 
 app = dash.Dash()
-sever = app.server
+server = app.server
 
 
 app.layout = html.Div([
