@@ -30,6 +30,7 @@ s = df2b[['Segment1','Date','Exchange','value']].groupby(['Exchange','Date'])[['
 df2b = pd.concat([df2b[['Segment1','Date','Exchange','value']],s.reset_index()]).sort_values(['Exchange','Date']).reset_index(drop=True)
 mgr_options1 = df2b["Exchange"].unique()
 mgr_options2 = df2b["Segment1"].unique()
+last_date_a = df2b.loc[len(df2b)-1,'Date']
 last_date = df2b.loc[len(df2b)-1,'Date'].strftime("%B %Y")
 
 df3 = df2.get('Exchange_Wise').dropna(axis=1, how='all')
@@ -45,19 +46,119 @@ df3b = df3b.tail(12).reset_index().melt(id_vars="Date")
 df3c = df3a.groupby(['Date','FO'])[['value']].sum().unstack().apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
 df3c.columns = ['Fut','Opt']
 df3c = df3c.tail(12).reset_index().melt(id_vars="Date")
+
+df36 = pd.read_csv(r'mcx_close_prices.csv')
+df36['Date'] = pd.to_datetime(df36['Date'])
+df36['Symbol'] = df36['Symbol'].str.upper().str.strip()
+#last_date1 = df36['Date'].iloc[-1]
+df36 = df36[ df36['Date'] == last_date_a].reset_index(drop=True)
+l1 = ["GOLD", "SILVER"]
+df36['Symbol1'] = np.where(df36['Symbol'].str.contains('gold|silver', case=False),np.where(df36['Symbol'].isin(l1), df36['Symbol'] , np.nan),df36['Symbol']   )
+df36 = df36.dropna().sort_values(by='mom', ascending=False).reset_index(drop=True)
+df36['Segment'] = np.where(df36['Symbol'].str.contains('gold|silver', case=False),"Bullion",
+                          np.where(df36['Symbol'].str.contains('kapas|cotton|mentha|rubber', case=False),"Agri",
+                                   np.where(df36['Symbol'].str.contains('gas|crude', case=False),"Energy", "Metals" )))                              
+df37 = pd.read_csv(r'ncdex_close_prices.csv')
+df37 = df37.dropna()
+df37.iloc[:,2] = df37.iloc[:,2].str.replace(",","").apply(float)
+df37.iloc[:,1] = df37.iloc[:,1].str.replace(",","").apply(float)
+df37['pct_change'] = df37.iloc[:,2]/df37.iloc[:,1]-1
+df37.sort_values(by='pct_change', inplace=True)
+
+df38 = pd.read_csv(r'ncdex_turnover.csv')
+df38.iloc[:,1] = df38.iloc[:,1].str.replace(",","").apply(float)
+df38 = df38.groupby(['Symbol'])[['Turnover']].sum().reset_index().sort_values(by="Turnover", ascending=False)          
+df38['Turnover'] = (df38['Turnover'] / 
+                      df38['Turnover'].sum()) * 100
+df38a = df38[:5].copy()
+new_row = pd.DataFrame(data = {
+    'Symbol' : ['Others'],
+    'Turnover' : [df38['Turnover'][5:].sum()]
+})
+df38b = pd.concat([df38a, new_row])
+
+df39 = pd.read_csv(r'mcx_turnover.csv')
+df39.iloc[:,1] = df39.iloc[:,1].str.replace(",","").apply(float)
+df39['Symbol'] = np.where(df39['Symbol'].str.contains('gold', case=False),"Gold",
+         np.where(df39['Symbol'].str.contains('silver', case=False),"Silver",df39['Symbol']))                       
+df39 = df39.groupby(['Symbol'])[['Turnover']].sum().reset_index().sort_values(by="Turnover", ascending=False)          
+df39['Turnover'] = (df39['Turnover'] / 
+                      df39['Turnover'].sum()) * 100
+df39a = df39[:5].copy()
+new_row = pd.DataFrame(data = {
+    'Symbol' : ['Others'],
+    'Turnover' : [df39['Turnover'][5:].sum()]
+})
+df39b = pd.concat([df39a, new_row])
+
 def fig1():
-    fig= px.line(df3b, x='Date', y='value', color='variable', markers=True)
-    fig.update_layout(width=400)
+    text1 = [f'{round(df3b.iloc[i,2],1)}%' if df3b.iloc[i,0]== last_date_a else "" for i in df3b.index]
+    fig= px.line(df3b, x='Date', y='value', color='variable', text=text1, markers=True, template='simple_white', width=700)
+    fig.update_yaxes(title_text="Percent Change")
+    fig.update_xaxes(title_text="")
+    fig.update_traces(textposition='top left')
     return fig
 
 def fig2():
-    fig= px.line(df3c, x='Date', y='value', color='variable', markers=True)
-    fig.update_layout(width=400)
+    text1 = [f'{round(df3c.iloc[i,2],1)}%' if df3c.iloc[i,0]== last_date_a else "" for i in df3c.index]
+    fig= px.line(df3c, x='Date', y='value', color='variable', text=text1, markers=True, template='simple_white', width=700)
+    fig.update_yaxes(title_text="Percent Change")
+    fig.update_xaxes(title_text="")
+    fig.update_traces(textposition='top left')
     return fig
+
+def fig3():
+    text1 = [f'{round(i*100,1)}%' for i in df36['mom']]
+    fig3 = px.bar(df36, x='mom',  y='Symbol', color='Segment', text=text1, template='simple_white', width=700)#title='<b>Monthly Percent Change in the Commodity Prices at MCX</b>', 
+    #fig2.update_traces(marker_color='#3EB595')
+    fig3.update_layout( uniformtext_minsize=10,  autosize=True, title_x=0.3, title_font_family ="Calibri")
+    fig3.update_layout(xaxis= { 'tickformat': ',.0%'}, hovermode='closest', legend_orientation="v", legend=dict(
+            x= 1,
+            y=0.9,))
+    fig3.update_traces(textposition="outside")
+    fig3.update_xaxes(title_text="Percent Change")
+    fig3.update_yaxes(title_text="")
+    return fig3
+
+def fig4():
+    text1 = [f'{round(i*100,1)}%' for i in df37['pct_change']]
+    fig3 = px.bar(df37, x='pct_change',  y='Symbol',  text=text1,  template='simple_white', width=700)#, title='<b>Monthly Percent Change in the Commodity Prices at NCDEX</b>',
+    #fig2.update_traces(marker_color='#3EB595')
+    fig3.update_layout( uniformtext_minsize=10,  autosize=True, title_x=0.3, title_font_family ="Calibri")
+    fig3.update_layout(xaxis= { 'tickformat': ',.0%'}, hovermode='closest', legend_orientation="v", legend=dict(
+            x= 1,
+            y=0.9,))
+    fig3.update_traces(textposition="outside")
+    fig3.update_xaxes(title_text="Percent Change")
+    fig3.update_yaxes(title_text="")
+    return fig3
+
+def fig56(data):
+    labels = data['Symbol']
+    values = data['Turnover']
+    colors = ['blue','red','lightblue','orange','green']
+    fig6 = go.Figure(data = go.Pie(values = values, 
+                                   labels = labels, hole = 0.7, direction ='clockwise', sort=True,
+                                   marker_colors = colors ))
+    fig6.update_traces(textposition = 'outside', hoverinfo='label+percent',
+                       textinfo='percent+label', textfont_size=16)
+    #fig.update_traces(textposition = 'outside' , textinfo = 'percent+label')
+    fig6.update_layout(showlegend=False,
+ #                      title_text = '% Share of Top 5 Commodities in NCDEX Turnover',
+                       title_font = dict(size=20,family='Verdana', 
+                                         color='darkred'))
+    fig6.add_annotation(x= 0.5, y = 0.5,
+                        text = last_date,
+                        font = dict(size=17,family='Verdana', 
+                                    color='black'),
+                        showarrow = False)
+    return fig6
+
+
 
 
 app = dash.Dash()
-server = app.server
+sever = app.server
 
 
 app.layout = html.Div([
@@ -115,6 +216,33 @@ app.layout = html.Div([
 #                dbc.Col(html.Div("One of three columns"),style={'background-color': 'lightgreen'}, width=4),
             ],
         ),
+        dbc.Row(
+            [
+                dbc.Col(children=[
+                                html.H3('Commodity Prices at MCX')
+                    ,
+                                html.Div(children=dcc.Graph(figure= fig3() ))],style={'width':'50%', 'display': 'inline-block','background-color': 'lightblue'}),
+                dbc.Col(children=[
+                                html.H3('Commodity Prices at NCDEX'),
+                                html.Div(children=dcc.Graph(figure= fig4() ))],style={'width':'50%', 'display': 'inline-block','background-color': 'orange'}),
+#                dbc.Col(html.Div("One of three columns"),style={'background-color': 'lightgreen'}, width=4),
+            ],
+        ),
+
+        dbc.Row(
+            [
+                dbc.Col(children=[
+                                html.H3('% Share of Top 5 Commodities at MCX')
+                    ,
+                                html.Div(children=dcc.Graph(figure= fig56(df39b) ))],style={'width':'50%', 'display': 'inline-block','background-color': 'lightblue'}),
+                dbc.Col(children=[
+                                html.H3('% Share of Top 5 Commodities at NCDEX'),
+                                html.Div(children=dcc.Graph(figure= fig56(df38b) ))],style={'width':'50%', 'display': 'inline-block','background-color': 'orange'}),
+#                dbc.Col(html.Div("One of three columns"),style={'background-color': 'lightgreen'}, width=4),
+            ],
+        ),
+        
+        
     ])
 
     
